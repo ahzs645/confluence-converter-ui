@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { Box, Paper, Typography, Button, ToggleButton, ToggleButtonGroup, useTheme } from '@mui/material';
-import { ConfluenceConverter, ConversionOptions } from '../utils/converter';
+import { ConfluenceConverter, ConversionOptions } from '../utils/ConfluenceConverter';
 import { marked } from 'marked';
 
 interface EditorProps {
@@ -333,4 +333,4 @@ export const ConfluenceEditor: React.FC<EditorProps> = ({ options, onOptionsChan
       </Paper>
     </Box>
   );
-}; 
+};
