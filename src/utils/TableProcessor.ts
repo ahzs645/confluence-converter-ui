@@ -1,5 +1,6 @@
 // src/utils/TableProcessor.ts
 import { ElementDetector } from './ElementDetector';
+import TurndownService from 'turndown'; // Add this import
 
 /**
  * Specialized processor for Confluence tables with enhanced handling
@@ -8,10 +9,12 @@ export class TableProcessor {
   /**
    * Map to track processed elements to avoid duplication
    */
-  private processedElements: WeakSet<Element>;
+  private processedElements: Set<HTMLElement>;
+  private turndownService: TurndownService;
 
-  constructor() {
-    this.processedElements = new WeakSet<Element>();
+  constructor(processedElements: Set<HTMLElement>, turndownService: TurndownService) {
+    this.processedElements = processedElements;
+    this.turndownService = turndownService;
   }
 
   /**
@@ -67,10 +70,11 @@ export class TableProcessor {
     // Process rows
     const rows = Array.from(table.querySelectorAll('tbody tr, tr:not(:first-child)'));
     for (const row of rows) {
-      if (this.processedElements.has(row)) continue;
-      this.processedElements.add(row);
+      const htmlRowElement = row as HTMLElement; // Cast to HTMLElement
+      if (this.processedElements.has(htmlRowElement)) continue;
+      this.processedElements.add(htmlRowElement);
       
-      const cells = Array.from(row.querySelectorAll('td'));
+      const cells = Array.from(htmlRowElement.querySelectorAll('td'));
       if (cells.length < 3) continue;
       
       // Extract data from each column
@@ -123,27 +127,25 @@ export class TableProcessor {
    */
   private processLayoutTable(table: HTMLTableElement): string {
     let markdown = '';
-    
     // Extract content from each cell, preserving block structure
     const rows = Array.from(table.rows);
     for (const row of rows) {
-      if (this.processedElements.has(row)) continue;
-      this.processedElements.add(row);
-      
-      const cells = Array.from(row.cells);
+      const htmlRowElement = row as HTMLTableRowElement;
+      if (this.processedElements.has(htmlRowElement)) continue;
+      this.processedElements.add(htmlRowElement);
+      const cells = Array.from(htmlRowElement.cells);
       for (const cell of cells) {
-        if (this.processedElements.has(cell)) continue;
-        this.processedElements.add(cell);
-        
+        const htmlCellElement = cell as HTMLElement;
+        if (this.processedElements.has(htmlCellElement)) continue;
+        this.processedElements.add(htmlCellElement);
         // Process this cell's content without table constraints
         let cellContent = '';
-        for (const child of Array.from(cell.childNodes)) {
+        for (const child of Array.from((cell as HTMLElement).childNodes)) {
           if (child.nodeType === Node.TEXT_NODE) {
-            cellContent += child.textContent;
+            cellContent += (child as Text).textContent;
           } else if (child.nodeType === Node.ELEMENT_NODE) {
             const el = child as HTMLElement;
             if (ElementDetector.shouldBeIgnored(el)) continue;
-            
             if (el.tagName === 'BR') {
               cellContent += '\n';
             } else if (el.tagName === 'P') {
@@ -156,16 +158,13 @@ export class TableProcessor {
             }
           }
         }
-        
         if (cellContent.trim()) {
           markdown += cellContent.trim() + '\n\n';
         }
       }
     }
-    
     return markdown;
   }
-  
   /**
    * Process a complex table as sections with headings
    * @param table The complex table element
@@ -173,43 +172,27 @@ export class TableProcessor {
    */
   private processComplexTable(table: HTMLTableElement): string {
     let markdown = '\n';
-    
     const rows = Array.from(table.rows);
     for (const row of rows) {
-      if (this.processedElements.has(row)) continue;
-      this.processedElements.add(row);
-      
-      const cells = Array.from(row.cells);
+      const htmlRowElement = row as HTMLTableRowElement;
+      if (this.processedElements.has(htmlRowElement)) continue;
+      this.processedElements.add(htmlRowElement);
+      const cells = Array.from(htmlRowElement.cells);
       if (cells.length === 0) continue;
-      
       // Use first cell as heading, rest as content
       const firstCell = cells[0];
-      
       // Extract heading text
       let sectionTitle = firstCell.textContent?.trim() || '';
-      
       // Create a heading if there's content
       if (sectionTitle) {
         markdown += `## ${sectionTitle}\n\n`;
       }
-      
-      // Process remaining cells as content
+      // Add the rest of the cells as content
       for (let i = 1; i < cells.length; i++) {
         const cell = cells[i];
-        if (this.processedElements.has(cell)) continue;
-        this.processedElements.add(cell);
-        
-        let content = cell.innerHTML
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<p>(.*?)<\/p>/gi, '$1\n\n')
-          .replace(/<\/?[^>]+(>|$)/g, '');
-        
-        if (content.trim()) {
-          markdown += content.trim() + '\n\n';
-        }
+        markdown += (cell.textContent?.trim() || '') + '\n\n';
       }
     }
-    
     return markdown;
   }
   
@@ -219,60 +202,64 @@ export class TableProcessor {
    * @returns string Markdown representation
    */
   private processGithubTable(table: HTMLTableElement): string {
-    let markdown = '\n';
-    
-    const rows = Array.from(table.rows);
+    if (this.processedElements.has(table)) {
+      return '';
+    }
+    this.processedElements.add(table);
+
+    const rows = Array.from(table.querySelectorAll('tr')); // Keep as 'tr' for all rows initially
     if (rows.length === 0) return '';
-    
-    // Find the maximum number of cells in any row
-    const maxCells = Math.max(...rows.map(row => row.cells.length));
-    if (maxCells === 0) return '';
-    
-    // Process each row
-    rows.forEach((row, rowIndex) => {
-      if (this.processedElements.has(row)) return;
-      this.processedElements.add(row);
-      
-      const cells = Array.from(row.cells);
-      const isHeader = rowIndex === 0 || row.querySelector('th') !== null;
-      let rowMarkdown = '|';
-      
-      // Process each cell
-      for (let i = 0; i < maxCells; i++) {
-        if (i < cells.length) {
-          const cell = cells[i];
-          this.processedElements.add(cell);
-          
-          // Process cell content
-          let content = cell.textContent?.trim() || '';
-          
-          // Check for basic formatting
-          const strong = cell.querySelector('strong, b');
-          const em = cell.querySelector('em, i');
-          
-          if (strong) {
-            content = `**${content}**`;
-          } else if (em) {
-            content = `*${content}*`;
-          }
-          
-          // Escape pipe characters
-          content = content.replace(/\|/g, '\\|');
-          
-          rowMarkdown += ` ${content} |`;
-        } else {
-          rowMarkdown += ' |';
-        }
-      }
-      
-      markdown += rowMarkdown + '\n';
-      
-      // Add separator after header row
-      if (isHeader) {
-        markdown += '|' + Array(maxCells).fill('---').join('|') + '|\n';
+
+    let markdown = '\n';
+    let headerProcessed = false;
+    let maxCells = 0;
+
+    // First pass to determine max cells for alignment
+    rows.forEach(row => {
+      const cells = Array.from(row.querySelectorAll('th, td'));
+      if (cells.length > maxCells) {
+        maxCells = cells.length;
       }
     });
-    
+
+    rows.forEach((row, rowIndex) => {
+      // Cast row to HTMLElement
+      const htmlRowElement = row as HTMLTableRowElement;
+      const cells = Array.from(htmlRowElement.cells);
+      let rowMarkdown = '|';
+      let isHeaderRow = false;
+
+      if (cells.length > 0 && cells[0].nodeName === 'TH' && !headerProcessed) {
+        isHeaderRow = true;
+        headerProcessed = true; 
+      }
+      
+      for (let i = 0; i < maxCells; i++) {
+        if (i < cells.length) {
+          const cell = cells[i] as HTMLElement;
+          // Ensure cell is not processed if it was part of a complex structure handled by another rule
+          if (this.processedElements.has(cell) && cell !== htmlRowElement && cell !== table) { 
+            // If cell was already processed by another rule (e.g. a panel inside a cell)
+            // we might want to just get its text or a placeholder.
+            // For now, we re-process, but this could be refined.
+          }
+          this.processedElements.add(cell); 
+          
+          let cellContent = this.turndownService.turndown(cell.innerHTML);
+          cellContent = cellContent.replace(/\n+/g, ' ').trim();
+          cellContent = cellContent.replace(/\|/g, '\\|');
+
+          rowMarkdown += ` ${cellContent} |`;
+        } else {
+          rowMarkdown += '  |'; 
+        }
+      }
+      markdown += rowMarkdown + '\n';
+
+      if (isHeaderRow) {
+        markdown += '|' + ' --- |'.repeat(maxCells) + '\n';
+      }
+    });
     return markdown + '\n';
   }
   

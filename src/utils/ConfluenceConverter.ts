@@ -16,7 +16,7 @@ export class EnhancedConfluenceConverter {
   private tableProcessor: TableProcessor;
   private panelProcessor: PanelProcessor;
   private breadcrumbProcessor: BreadcrumbProcessor;
-  private processedElements: WeakSet<Element>;
+  private processedElements: Set<HTMLElement>;
 
   /**
    * Constructor
@@ -28,12 +28,10 @@ export class EnhancedConfluenceConverter {
       headingStyle: 'atx',
       codeBlockStyle: this.options.codeBlockStyle as any,
     });
-    
-    this.tableProcessor = new TableProcessor();
-    this.panelProcessor = new PanelProcessor(this.options.panelStyle);
+    this.processedElements = new Set<HTMLElement>();
+    this.tableProcessor = new TableProcessor(this.processedElements, this.turndown);
+    this.panelProcessor = new PanelProcessor(this.turndown);
     this.breadcrumbProcessor = new BreadcrumbProcessor(this.options);
-    this.processedElements = new WeakSet<Element>();
-    
     this.setupCustomRules();
   }
 

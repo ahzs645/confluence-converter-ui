@@ -234,6 +234,32 @@ export class ElementDetector {
   }
 
   /**
+   * Detects if an element is an expand macro
+   * @param element The element to check
+   * @returns boolean True if the element is an expand macro
+   */
+  public static isExpandMacro(element: HTMLElement): boolean {
+    if (!element) return false;
+    return (
+      element.classList?.contains('expand-macro') ||
+      element.getAttribute('data-macro-name') === 'expand'
+    );
+  }
+
+  /**
+   * Detects if an element is a Jira Issues macro
+   * @param element The element to check
+   * @returns boolean True if the element is a Jira Issues macro
+   */
+  public static isJiraMacro(element: HTMLElement): boolean {
+    if (!element) return false;
+    // Example detection: based on a class or data attribute
+    // Adjust this selector based on how the Jira macro is rendered in your Confluence HTML
+    return element.classList.contains('jira-issues') || 
+           element.getAttribute('data-macro-name') === 'jira';
+  }
+
+  /**
    * Finds the main content element in the document
    * @param document The HTML document
    * @returns HTMLElement The main content element or document.body if not found

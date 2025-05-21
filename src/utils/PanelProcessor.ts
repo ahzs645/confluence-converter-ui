@@ -1,5 +1,6 @@
 // src/utils/PanelProcessor.ts
 import { ElementDetector } from './ElementDetector';
+import TurndownService from 'turndown'; // Add this import
 
 /**
  * Type for panel style configuration
@@ -32,23 +33,26 @@ const panelStyles: PanelStyle = {
  * Specialized processor for Confluence panels, admonitions, and macros
  */
 export class PanelProcessor {
-  private panelStyle: 'blockquote' | 'div' | 'section' = 'blockquote';
-  private processedElements: WeakSet<Element>;
-  
+  private processedElements: Set<HTMLElement>;
+  private turndownService: TurndownService;
+  private panelStyle: keyof PanelStyle;
+
   /**
-   * @param panelStyle The style to use for panels
+   * @param turndownService The TurndownService instance for converting inner HTML
    */
-  constructor(panelStyle: 'blockquote' | 'div' | 'section' = 'blockquote') {
+  constructor(turndownService: TurndownService, panelStyle: keyof PanelStyle = 'blockquote') {
+    this.turndownService = turndownService;
+    this.processedElements = new Set<HTMLElement>();
     this.panelStyle = panelStyle;
-    this.processedElements = new WeakSet<Element>();
   }
 
   /**
    * Change the panel style
-   * @param style The new panel style to use
+   * @param panelStyle The style to use for panels
    */
-  public setPanelStyle(style: 'blockquote' | 'div' | 'section'): void {
-    this.panelStyle = style;
+  public setPanelStyle(panelStyle: 'blockquote' | 'div' | 'section'): void {
+    // If panelStyle is still a concept you need, you can set it via a method
+    // this.panelStyle = panelStyle;
   }
   
   /**
@@ -60,23 +64,17 @@ export class PanelProcessor {
     if (this.processedElements.has(panel)) {
       return '';
     }
-    
     this.processedElements.add(panel);
-    
     // Determine panel type
     const panelType = ElementDetector.getPanelType(panel);
-    
     // Extract panel title
     const titleElement = panel.querySelector('.panelHeader, .panel-header, .aui-message-header');
     const title = titleElement ? titleElement.textContent?.trim() || '' : '';
-    
     // Extract panel content
     const contentElement = panel.querySelector('.panelContent, .panel-body, .aui-message-content');
     let content = '';
-    
-    if (contentElement) {
+    if (contentElement && contentElement instanceof HTMLElement) {
       this.processedElements.add(contentElement);
-      
       // Process the content
       for (const child of Array.from(contentElement.childNodes)) {
         if (child.nodeType === Node.TEXT_NODE) {
@@ -84,7 +82,6 @@ export class PanelProcessor {
         } else if (child.nodeType === Node.ELEMENT_NODE) {
           const el = child as HTMLElement;
           if (ElementDetector.shouldBeIgnored(el)) continue;
-          
           if (el.tagName === 'BR') {
             content += '\n';
           } else if (el.tagName === 'P') {
@@ -101,13 +98,11 @@ export class PanelProcessor {
       // If no specific content element, process all children except the title
       for (const child of Array.from(panel.childNodes)) {
         if (child === titleElement) continue;
-        
         if (child.nodeType === Node.TEXT_NODE) {
           content += child.textContent || '';
         } else if (child.nodeType === Node.ELEMENT_NODE) {
           const el = child as HTMLElement;
           if (ElementDetector.shouldBeIgnored(el)) continue;
-          
           if (el.tagName === 'BR') {
             content += '\n';
           } else if (el.tagName === 'P') {
@@ -121,8 +116,8 @@ export class PanelProcessor {
         }
       }
     }
-    
     // Format according to the chosen style
+    // When using:
     return panelStyles[this.panelStyle](title, content.trim(), panelType);
   }
   
@@ -147,7 +142,9 @@ export class PanelProcessor {
     let content = '';
     
     if (contentElement) {
-      this.processedElements.add(contentElement);
+      if (contentElement instanceof HTMLElement) {
+        this.processedElements.add(contentElement);
+      }
       
       // Process the content
       for (const child of Array.from(contentElement.childNodes)) {
@@ -225,6 +222,39 @@ export class PanelProcessor {
     return `## Table of Contents\n\n[TOC]\n\n`;
   }
   
+  /**
+   * Process a Jira Issues macro
+   * @param jiraMacroElement The Jira macro element
+   * @returns string Markdown representation
+   */
+  public processJiraMacro(jiraMacroElement: HTMLElement): string {
+    if (this.processedElements.has(jiraMacroElement)) {
+      return '';
+    }
+    this.processedElements.add(jiraMacroElement);
+  
+    let markdown = '\n**Jira Issues:**\n';
+    // Example: Assuming Jira issues are links within the macro
+    // Adjust selectors based on your Jira macro's HTML structure
+    const issueLinks = jiraMacroElement.querySelectorAll('a[href*="/browse/"]'); // Made selector more generic
+    
+    if (issueLinks.length > 0) {
+      issueLinks.forEach(link => {
+        const issueKey = link.textContent?.trim() || 'Jira Issue';
+        const issueUrl = link.getAttribute('href') || '#';
+        markdown += `* [${issueKey}](${issueUrl})\n`;
+      });
+    } else {
+      // Fallback if no specific links found, or provide a placeholder
+      // You might want to convert the inner content of the macro if it's complex
+      // const innerContent = this.turndownService.turndown(jiraMacroElement.innerHTML);
+      // markdown += `* (Could not extract specific Jira issues - check macro structure)\n${innerContent}\n`;
+      markdown += '* (Jira macro content - further parsing might be needed)\n';
+    }
+    
+    return markdown + '\n';
+  }
+
   /**
    * Process a status macro
    * @param statusElement Status element
