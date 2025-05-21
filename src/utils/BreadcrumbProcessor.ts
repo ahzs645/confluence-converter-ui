@@ -78,66 +78,50 @@ export class BreadcrumbProcessor {
    * @returns DocumentMetadata Metadata object
    */
   public extractMetadata(document: Document): DocumentMetadata {
-    if (!this.options.includeMetadata && !this.options.includeLastModified) {
-         // Return minimal metadata if neither option is enabled
-        return {
-            title: this.extractTitle(document),
-            breadcrumbs: this.options.includeBreadcrumbs ? this.extractBreadcrumbs(document) : []
-        };
-    }
-
-    // Extract title
+    // Always extract all metadata fields
     const title = this.extractTitle(document);
-    
-    // Extract last modified date
     let lastModified = '';
-    if (this.options.includeLastModified) {
-      const lastModifiedElements = [
-        document.querySelector('.last-modified'),
-        document.querySelector('.page-metadata .editor'),
-        document.querySelector('.page-metadata')
-      ].filter(Boolean);
-      
-      if (lastModifiedElements.length > 0) {
-        const element = lastModifiedElements[0];
-        if (element && element.className.includes('page-metadata')) {
-          const text = element.textContent?.trim() || '';
-          const match = text.match(/last updated by\s+(.*?)(?:\s+on\s+(.*))?$/i);
-          if (match) {
-            lastModified = match[1].trim();
-          }
-        } else if (element) {
-          lastModified = element.textContent?.trim() || '';
-        }
-      }
-    }
-    
-    // Extract creation information
     let createdBy = '';
     let createdDate = '';
-    
-    if (this.options.includeMetadata) {
-      const pageMetadata = document.querySelector('.page-metadata');
-      if (pageMetadata) {
-        const metadataContent = pageMetadata.textContent?.trim() || '';
-        
-        // Extract author
-        const authorMatch = metadataContent.match(/Created by\s+(.*?)(?:,|\s+on|\s+last)/i);
-        if (authorMatch && authorMatch[1]) {
-          createdBy = authorMatch[1].trim();
+
+    // Extract last modified date if present
+    const lastModifiedElements = [
+      document.querySelector('.last-modified'),
+      document.querySelector('.page-metadata .editor'),
+      document.querySelector('.page-metadata')
+    ].filter(Boolean);
+    if (lastModifiedElements.length > 0) {
+      const element = lastModifiedElements[0];
+      if (element && element.className.includes('page-metadata')) {
+        const text = element.textContent?.trim() || '';
+        const match = text.match(/last updated by\s+(.*?)(?:\s+on\s+(.*))?$/i);
+        if (match) {
+          lastModified = match[1].trim();
         }
-        
-        // Extract date
-        const dateMatch = metadataContent.match(/on\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4}|[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4})/i);
-        if (dateMatch && dateMatch[1]) {
-          createdDate = dateMatch[1].trim();
-        }
+      } else if (element) {
+        lastModified = element.textContent?.trim() || '';
       }
     }
-    
-    // Extract breadcrumbs
+
+    // Extract creation information if present
+    const pageMetadata = document.querySelector('.page-metadata');
+    if (pageMetadata) {
+      const metadataContent = pageMetadata.textContent?.trim() || '';
+      // Extract author
+      const authorMatch = metadataContent.match(/Created by\s+(.*?)(?:,|\s+on|\s+last)/i);
+      if (authorMatch && authorMatch[1]) {
+        createdBy = authorMatch[1].trim();
+      }
+      // Extract date
+      const dateMatch = metadataContent.match(/on\s+([A-Z][a-z]{2}\s+\d{1,2},\s+\d{4}|[A-Z][a-z]{2}\s+\d{1,2}\s+\d{4})/i);
+      if (dateMatch && dateMatch[1]) {
+        createdDate = dateMatch[1].trim();
+      }
+    }
+
+    // Always extract breadcrumbs (option controls output, not extraction)
     const breadcrumbs = this.extractBreadcrumbs(document);
-    
+
     return {
       title,
       lastModified,

@@ -86,11 +86,7 @@ export interface ConversionResult {
 }
 
 export const defaultOptions: ConversionOptions = {
-  panelStyle: 'blockquote',
-  tableStyle: 'github',
-  codeBlockStyle: 'fenced',
-  imageStyle: 'markdown',
-  macroHandling: 'convert',
+  // Content inclusion options
   includeBreadcrumbs: false,
   includeLastModified: false,
   includeAttachments: false,
@@ -113,6 +109,20 @@ export const defaultOptions: ConversionOptions = {
   includeInlineFormatting: false,
   includeSpecialCharacters: false,
   includeEmojis: false,
+
+  // Style options
+  panelStyle: 'blockquote',
+  tableStyle: 'github',
+  codeBlockStyle: 'fenced',
+  imageStyle: 'markdown',
+  linkStyle: 'markdown',
+  headingStyle: 'atx',
+
+  // Macro and attachment handling
+  macroHandling: 'convert',
+  attachmentOption: 'visible',
+
+  // Custom processing options
   includeCustomStyles: false,
   includeCustomClasses: false,
   includeCustomIds: false,
@@ -127,8 +137,5 @@ export const defaultOptions: ConversionOptions = {
   includeCustomPageInfo: false,
   includeCustomTableOfContents: false,
   includeCustomBreadcrumbs: false,
-  includeCustomLastModified: false,
-  attachmentOption: 'visible',
-  linkStyle: 'markdown',
-  headingStyle: 'atx'
+  includeCustomLastModified: false
 };
