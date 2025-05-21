@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import { Box, Paper, Typography, Button, ToggleButton, ToggleButtonGroup, useTheme } from '@mui/material';
-import { ConfluenceConverter, ConversionOptions } from '../utils/ConfluenceConverter';
+import { EnhancedConfluenceConverter } from '../utils/ConfluenceConverter';
+import { ConversionOptions } from '../utils/types';
 import { marked } from 'marked';
 
 interface EditorProps {
@@ -14,7 +15,7 @@ export const ConfluenceEditor: React.FC<EditorProps> = ({ options, onOptionsChan
   const [htmlInput, setHtmlInput] = useState<string>('');
   const [markdownOutput, setMarkdownOutput] = useState<string>('');
   const [renderedHtml, setRenderedHtml] = useState<string>('');
-  const [converter] = useState(() => new ConfluenceConverter(options));
+  const [converter, setConverter] = useState(() => new EnhancedConfluenceConverter(options));
   const [inputView, setInputView] = useState<'code' | 'preview'>('code');
   const [outputView, setOutputView] = useState<'code' | 'preview'>('code');
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +68,13 @@ export const ConfluenceEditor: React.FC<EditorProps> = ({ options, onOptionsChan
   }, [updateEditorLayout]);
 
   useEffect(() => {
-    converter.updateOptions(options);
+    // Create a new converter instance when options change
+    const newConverter = new EnhancedConfluenceConverter(options);
+    setConverter(newConverter);
+  }, [options]); // Only depend on options
+
+  useEffect(() => {
+    // Re-run conversion when converter or htmlInput changes
     if (htmlInput) {
       try {
         const result = converter.convert(htmlInput);
@@ -83,7 +90,7 @@ export const ConfluenceEditor: React.FC<EditorProps> = ({ options, onOptionsChan
       setMarkdownOutput('');
       setError(null);
     }
-  }, [options, htmlInput, converter]);
+  }, [htmlInput, converter]); // Depend on htmlInput and converter
 
   useEffect(() => {
     const renderMarkdown = async () => {
@@ -114,6 +121,8 @@ export const ConfluenceEditor: React.FC<EditorProps> = ({ options, onOptionsChan
   const handleHtmlChange = (value: string | undefined) => {
     if (value !== undefined) {
       setHtmlInput(value);
+    } else {
+      setHtmlInput('');
     }
   };
 
@@ -131,7 +140,8 @@ export const ConfluenceEditor: React.FC<EditorProps> = ({ options, onOptionsChan
     }
   };
 
-  const handleViewChange = (view: 'code' | 'preview', isInput: boolean) => {
+  const handleViewChange = (view: 'code' | 'preview' | null, isInput: boolean) => {
+    if (view === null) return; // Prevent deselecting
     if (isInput) {
       setInputView(view);
     } else {

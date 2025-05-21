@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Box, CssBaseline, ThemeProvider, createTheme, IconButton, useMediaQuery } from '@mui/material';
 import { ConfluenceEditor } from './components/Editor';
 import { OptionsPanel } from './components/OptionsPanel';
-import { ConversionOptions, defaultOptions } from './utils/converter';
+import { ConversionOptions } from './utils/types';
+import { defaultOptions } from './utils/ConfluenceConverter';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 
@@ -44,13 +45,16 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', height: '100vh' }}>
-        <Box sx={{ width: 300, p: 2, overflowY: 'auto' }}>
+        <Box sx={{ width: 300, flexShrink: 0, overflowY: 'auto' }}>
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
             <IconButton onClick={toggleColorMode} color="inherit">
               {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
           </Box>
-          <OptionsPanel options={options} onOptionsChange={setOptions} />
+          <OptionsPanel
+            options={options}
+            onOptionsChange={setOptions}
+          />
         </Box>
         <Box sx={{ flex: 1 }}>
           <ConfluenceEditor options={options} onOptionsChange={setOptions} />

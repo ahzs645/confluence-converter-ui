@@ -7,30 +7,31 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Divider,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
-import { ConversionOptions } from '../utils/converter';
+import { ConversionOptions } from '../utils/types';
 
 interface OptionsPanelProps {
   options: ConversionOptions;
   onOptionsChange: (options: ConversionOptions) => void;
 }
 
-export const OptionsPanel: React.FC<OptionsPanelProps> = ({ options, onOptionsChange }) => {
-  const handleChange = (key: keyof ConversionOptions, value: any) => {
+export const OptionsPanel: React.FC<OptionsPanelProps> = ({
+  options,
+  onOptionsChange,
+}) => {
+  const handleChange = (name: keyof ConversionOptions, value: any) => {
     onOptionsChange({
       ...options,
-      [key]: value,
+      [name]: value,
     });
   };
 
-  const handleMacroChange = (macroType: keyof ConversionOptions['macroHandling'], value: any) => {
+  const handleMacroChange = (value: 'convert' | 'remove' | 'preserve') => {
     onOptionsChange({
       ...options,
-      macroHandling: {
-        ...options.macroHandling,
-        [macroType]: value,
-      },
+      macroHandling: value,
     });
   };
 
@@ -41,6 +42,16 @@ export const OptionsPanel: React.FC<OptionsPanelProps> = ({ options, onOptionsCh
       </Typography>
       
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeBreadcrumbs}
+              onChange={(e) => handleChange('includeBreadcrumbs', e.target.checked)}
+            />
+          }
+          label="Include Breadcrumbs"
+        />
+
         <FormControl fullWidth>
           <InputLabel>Panel Style</InputLabel>
           <Select
@@ -91,62 +102,113 @@ export const OptionsPanel: React.FC<OptionsPanelProps> = ({ options, onOptionsCh
           </Select>
         </FormControl>
 
-        <Divider sx={{ my: 1 }} />
-        <Typography variant="subtitle1" gutterBottom>
-          Macro Handling
-        </Typography>
-
         <FormControl fullWidth>
-          <InputLabel>Info Macro</InputLabel>
+          <InputLabel>Link Style</InputLabel>
           <Select
-            value={options.macroHandling.info}
-            label="Info Macro"
-            onChange={(e) => handleMacroChange('info', e.target.value)}
+            value={options.linkStyle}
+            label="Link Style"
+            onChange={(e) => handleChange('linkStyle', e.target.value)}
           >
-            <MenuItem value="blockquote">Blockquote</MenuItem>
-            <MenuItem value="div">Div</MenuItem>
-            <MenuItem value="section">Section</MenuItem>
+            <MenuItem value="markdown">Markdown</MenuItem>
+            <MenuItem value="html">HTML</MenuItem>
           </Select>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>Warning Macro</InputLabel>
+          <InputLabel>Heading Style</InputLabel>
           <Select
-            value={options.macroHandling.warning}
-            label="Warning Macro"
-            onChange={(e) => handleMacroChange('warning', e.target.value)}
+            value={options.headingStyle}
+            label="Heading Style"
+            onChange={(e) => handleChange('headingStyle', e.target.value)}
           >
-            <MenuItem value="blockquote">Blockquote</MenuItem>
-            <MenuItem value="div">Div</MenuItem>
-            <MenuItem value="section">Section</MenuItem>
+            <MenuItem value="atx">ATX</MenuItem>
+            <MenuItem value="setext">Setext</MenuItem>
           </Select>
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel>Note Macro</InputLabel>
+          <InputLabel>Macro Handling</InputLabel>
           <Select
-            value={options.macroHandling.note}
-            label="Note Macro"
-            onChange={(e) => handleMacroChange('note', e.target.value)}
+            value={options.macroHandling}
+            label="Macro Handling"
+            onChange={(e) => handleMacroChange(e.target.value as 'convert' | 'remove' | 'preserve')}
           >
-            <MenuItem value="blockquote">Blockquote</MenuItem>
-            <MenuItem value="div">Div</MenuItem>
-            <MenuItem value="section">Section</MenuItem>
+            <MenuItem value="convert">Convert</MenuItem>
+            <MenuItem value="remove">Remove</MenuItem>
+            <MenuItem value="preserve">Preserve</MenuItem>
           </Select>
         </FormControl>
 
-        <FormControl fullWidth>
-          <InputLabel>Code Macro</InputLabel>
-          <Select
-            value={options.macroHandling.code}
-            label="Code Macro"
-            onChange={(e) => handleMacroChange('code', e.target.value)}
-          >
-            <MenuItem value="fenced">Fenced</MenuItem>
-            <MenuItem value="indented">Indented</MenuItem>
-          </Select>
-        </FormControl>
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeLastModified}
+              onChange={(e) => handleChange('includeLastModified', e.target.checked)}
+            />
+          }
+          label="Include Last Modified"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeMetadata}
+              onChange={(e) => handleChange('includeMetadata', e.target.checked)}
+            />
+          }
+          label="Include Metadata"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeMacros}
+              onChange={(e) => handleChange('includeMacros', e.target.checked)}
+            />
+          }
+          label="Include Macros"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeImages}
+              onChange={(e) => handleChange('includeImages', e.target.checked)}
+            />
+          }
+          label="Include Images"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeLinks}
+              onChange={(e) => handleChange('includeLinks', e.target.checked)}
+            />
+          }
+          label="Include Links"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeCodeBlocks}
+              onChange={(e) => handleChange('includeCodeBlocks', e.target.checked)}
+            />
+          }
+          label="Include Code Blocks"
+        />
+
+        <FormControlLabel
+          control={
+            <Switch
+              checked={options.includeTables}
+              onChange={(e) => handleChange('includeTables', e.target.checked)}
+            />
+          }
+          label="Include Tables"
+        />
       </Box>
     </Paper>
   );
-}; 
+};
