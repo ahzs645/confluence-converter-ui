@@ -10,7 +10,7 @@ export class Converter {
   private converter: EnhancedConfluenceConverter;
 
   constructor(options = defaultOptions) {
-    this.htmlParser = new HtmlParser();
+    this.htmlParser = new HtmlParser(options);
     this.fileSystem = new FileSystem();
     this.converter = new EnhancedConfluenceConverter(options);
   }
