@@ -1,9 +1,17 @@
 import { JSDOM } from 'jsdom';
-import { AttachmentInfo, Breadcrumb } from './types';
+import { AttachmentInfo, Breadcrumb, ConversionOptions, defaultOptions } from './types';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
 export class HtmlParser {
+  private readonly dom: JSDOM;
+  private readonly options: ConversionOptions;
+
+  constructor(htmlContent: string, options: ConversionOptions = defaultOptions) {
+    this.dom = new JSDOM(htmlContent);
+    this.options = options;
+  }
+
   /**
    * Parse an HTML file and return a JSDOM document
    */
@@ -48,6 +56,9 @@ export class HtmlParser {
    * Extract the last modified date from parsed HTML
    */
   extractLastModified(document: Document): string {
+    if (!this.options.includeLastModified) {
+      return "";
+    }
     const selectors = [
       '.last-modified', 
       '.page-metadata .editor',
@@ -99,6 +110,9 @@ export class HtmlParser {
    * Extract attachment information from parsed HTML
    */
   extractAttachmentInfo(document: Document): Map<string, AttachmentInfo> {
+    if (!this.options.includeAttachments) {
+      return new Map<string, AttachmentInfo>();
+    }
     const attachments = new Map<string, AttachmentInfo>();
     
     try {
@@ -149,6 +163,9 @@ export class HtmlParser {
    * Extract breadcrumbs from the document
    */
   extractBreadcrumbs(document: Document): Breadcrumb[] {
+    if (!this.options.includeBreadcrumbs) {
+      return [];
+    }
     const breadcrumbs: Breadcrumb[] = [];
     
     try {
